@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Etherscan + Connect</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;max-width:820px;margin:40px auto;padding:0 16px}
+    button{padding:10px 14px;font-size:16px;cursor:pointer;margin:6px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .box{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:10px}
+    code{word-break:break-all}
+    .muted{opacity:.75}
+  </style>
+</head>
+<body>
+  <h2>Etherscan (Write Contract) + Connect</h2>
+  <p class="muted">
+    Автоконнект на Etherscan невозможен — кошелёк требует ручного подтверждения.
+    Но ты можешь открыть нужную вкладку и подключить кошелёк по кнопке тут.
+  </p>
+
+  <div class="row">
+    <button id="openEtherscan">Открыть контракт на Etherscan → Write Contract</button>
+    <button id="connect">Connect MetaMask</button>
+  </div>
+
+  <div class="box">
+    <div><b>Status:</b> <span id="status">—</span></div>
+    <div><b>Address:</b> <code id="addr">—</code></div>
+    <div><b>ChainId:</b> <code id="chain">—</code></div>
+  </div>
+
+  <script>
+    // ВСТАВЬ СЮДА адрес контракта на Etherscan:
+    const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+    // Если нужна конкретная сеть, можно заменить домен:
+    // mainnet: https://etherscan.io
+    // sepolia: https://sepolia.etherscan.io
+    const ETHERSCAN_BASE = "https://etherscan.io";
+
+    const $ = (id) => document.getElementById(id);
+    const setStatus = (t) => $("status").textContent = t;
+    const setAddr = (t) => $("addr").textContent = t;
+    const setChain = (t) => $("chain").textContent = t;
+
+    $("openEtherscan").addEventListener("click", () => {
+      if (!/^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS)) {
+        alert("Вставь правильный CONTRACT_ADDRESS (0x...40 символов).");
+        return;
+      }
+      // Открываем сразу страницу контракта (дальше ты вручную жмёшь Connect to Web3 на Etherscan)
+      const url = `${ETHERSCAN_BASE}/address/${CONTRACT_ADDRESS}#writeContract`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+
+    $("connect").addEventListener("click", async () => {
+      if (!window.ethereum) {
+        setStatus("MetaMask не найден. Установи расширение MetaMask.");
+        return;
+      }
+      try {
+        setStatus("Запрашиваю доступ…");
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        setAddr(accounts?.[0] || "—");
+        setChain(chainId);
+        setStatus("Подключено ✅");
+      } catch (e) {
+        setStatus("Ошибка: " + (e?.message || String(e)));
+      }
+    });
+
+    if (window.ethereum?.on) {
+      window.ethereum.on("accountsChanged", (accs) => setAddr(accs?.[0] || "—"));
+      window.ethereum.on("chainChanged", (chainId) => setChain(chainId));
+    }
+  </script>
+</body>
+</html>
